@@ -103,8 +103,8 @@ pub fn run(args: &[&str]) -> Result<(), String> {
     let profile = if dev { "dev" } else { "web" };
 
     let mut c = cargo();
-    c.args(["build", "-p", "lightcraft-web", "--lib", "--target", TARGET, "--profile", profile]);
-    step(c, &format!("cargo build -p lightcraft-web --target {TARGET} --profile {profile}"))?;
+    c.args(["rustc", "-p", "lightcraft-web", "--lib", "--crate-type", "cdylib", "--target", TARGET, "--profile", profile]);
+    step(c, &format!("cargo rustc -p lightcraft-web --crate-type cdylib --target {TARGET} --profile {profile}"))?;
 
     let wasm = target_dir.join(TARGET).join(if dev { "debug" } else { profile }).join("lightcraft_web.wasm");
     let out = target_dir.join("web");

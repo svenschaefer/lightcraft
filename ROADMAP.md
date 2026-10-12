@@ -1,5 +1,7 @@
 # LightCraft roadmap
 
+Engineering checks and catalog validation: [Quality checks](docs/quality-checks.md).
+
 **Stage: alpha** · next: beta, ~14 points and ~340–600 h away
 
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (full re-measure against Lightroom Classic 15.5 and the installed Lightroom 9.6; restructured to the progress-docs standard) · **Target:** Adobe Lightroom Classic 15.5 / Lightroom 9.6

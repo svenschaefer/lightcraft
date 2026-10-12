@@ -330,6 +330,8 @@ impl Journal {
             }
             None => (Catalog::new(), 0, None),
         };
+        // Refuse a semantically corrupt snapshot before replay or tail repair can write it.
+        catalog.check_album_hierarchy()?;
         report.snapshot_seq = snapshot_seq;
         let mut j = Journal {
             store,

@@ -32,7 +32,10 @@ impl Scratch {
         Scratch(dir)
     }
     fn path(&self, rel: &str) -> String {
-        self.0.join(rel).to_string_lossy().to_string()
+        // Joining a slash-separated fixture can retain mixed separators on Windows.
+        // Rebuild its components so expectations use the native path representation.
+        let path: PathBuf = self.0.join(rel).components().collect();
+        path.to_string_lossy().to_string()
     }
 }
 

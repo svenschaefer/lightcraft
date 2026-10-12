@@ -10,7 +10,8 @@ description = "LightCraft in the browser: the egui UI compiled to WASM (build wi
 workspace = true
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+# Native tests use a Rust library; `cargo xtask web` requests the browser cdylib.
+crate-type = ["rlib"]
 
 [dependencies]
 lightcraft-engine = { workspace = true }

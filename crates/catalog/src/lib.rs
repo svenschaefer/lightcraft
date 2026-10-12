@@ -26,7 +26,7 @@ pub mod safe_file;
 pub mod stacks;
 pub mod store;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 pub use dates::{DateRun, GroupBy};
@@ -583,7 +583,11 @@ impl Catalog {
                     }
                     // no cycles
                     let mut cur = Some(p);
+                    let mut seen = BTreeSet::new();
                     while let Some(c) = cur {
+                        if !seen.insert(c) {
+                            return Err(CatalogError::Invalid("parent folders contain a cycle".into()));
+                        }
                         if c == id {
                             return Err(CatalogError::Invalid("cannot move a folder into itself".into()));
                         }
@@ -790,7 +794,35 @@ impl Catalog {
     }
 
     pub fn from_snapshot(s: &str) -> Result<Catalog> {
-        serde_json::from_str(s).map_err(|e| CatalogError::Corrupt(e.to_string()))
+        let catalog: Catalog = serde_json::from_str(s).map_err(|e| CatalogError::Corrupt(e.to_string()))?;
+        catalog.check_album_hierarchy()?;
+        Ok(catalog)
+    }
+
+    /// Validate persisted parent references without recursive or repeated full-tree walks.
+    pub(crate) fn check_album_hierarchy(&self) -> Result<()> {
+        let mut checked = BTreeSet::new();
+        for &id in self.albums.keys() {
+            let mut path = BTreeSet::new();
+            let mut current = Some(id);
+            while let Some(id) = current {
+                if checked.contains(&id) {
+                    break;
+                }
+                if !path.insert(id) {
+                    return Err(CatalogError::Corrupt(format!("album parent cycle at {}", id.0)));
+                }
+                let album = self.albums.get(&id).ok_or_else(|| CatalogError::Corrupt(format!("missing parent album {}", id.0)))?;
+                if let Some(parent) = album.parent
+                    && !self.albums.get(&parent).is_some_and(|a| a.folder)
+                {
+                    return Err(CatalogError::Corrupt(format!("album {} has a missing or non-folder parent {}", id.0, parent.0)));
+                }
+                current = album.parent;
+            }
+            checked.extend(path);
+        }
+        Ok(())
     }
 
     /// Replay an op log (JSON lines) on top of `self`. A torn final line (crash mid-write) is ignored.
@@ -830,6 +862,8 @@ fn album_order_key(a: &Album) -> (bool, bool, u32, String, AlbumId) {
 mod tests;
 #[cfg(test)]
 mod tests_album_order;
+#[cfg(test)]
+mod tests_album_validation;
 #[cfg(test)]
 mod tests_background;
 #[cfg(test)]
